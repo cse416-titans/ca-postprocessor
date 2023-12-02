@@ -2,8 +2,12 @@ import json
 import os
 
 import pymongo
+import pandas as pd
+import math
 
 from MakeMongoDocument import *
+
+from pathUtil import getPathName, getClusterSetPathName
 
 DB_SOURCE = "./"
 DB_ADDR = "mongodb://localhost:27017/"
@@ -37,19 +41,17 @@ def make_summary(root, path):
             list.append(file)
 
         if "ensemble" in name:
-            sets = []
+            clusterSets = []
             sets_collection = mydb["ClusterSets"]
-            numOfPlans = 0
             for file in file_list:
                 if file in NOT_TO_ADD:
                     continue
                 clusterSetId = ":".join(getPathName(path + "/" + file))
 
-                set = sets_collection.find_one({"_id": clusterSetId})
-                sets.append(set)
-                numOfPlans += set["numOfPlans"]
+                clusterSet = sets_collection.find_one({"_id": clusterSetId})
+                clusterSets.append(clusterSet)
 
-            ensemble = make_ensemble(numOfPlans, sets, name, path)
+            ensemble = make_ensemble(clusterSets, name, path)
             ensembles_collection = mydb["Ensembles"]
             ensembles_collection.insert_one(ensemble)
             print("Ensemble inserted: ", name)
@@ -64,25 +66,73 @@ def make_summary(root, path):
 
                 cluster = clusters_collection.find_one({"_id": clusterId})
                 clusters.append(cluster)
-            set = make_clusterSet(clusters, name, path)
+
+            # read cluster-centers-summary.csv into dataframe and retireve all pairwise distances between clusters
+            df = pd.read_csv(
+                f"{getClusterSetPathName(path)}/cluster-centers-summary.csv",
+            )
+            clusterDistances = []
+            for i in range(len(df)):
+                for j in range(i + 1, len(df)):
+                    if i == j:
+                        continue
+                    xa = df.iloc[i, 1]
+                    xb = df.iloc[j, 1]
+                    ya = df.iloc[i, 2]
+                    yb = df.iloc[j, 2]
+                    dist = math.sqrt((xa - xb) ** 2 + (ya - yb) ** 2)
+                    clusterDistances.append(dist)
+
+            set = make_clusterSet(clusters, name, clusterDistances, path)
             sets_collection = mydb["ClusterSets"]
             sets_collection.insert_one(set)
             print("ClusterSet inserted: ", name)
 
         elif "cluster" in name:
+            planIdxs = []
             plans = []
             plans_collection = mydb["DistrictPlans"]
             for file in file_list:
                 planId = ":".join(getPathName(path + "/" + file))
-
+                planIdxs.append(int(planId.split(":")[-1].split("-")[-1]) - 1)
                 plan = plans_collection.find_one({"_id": planId})
                 plans.append(plan)
-            cluster = make_cluster(plans, name, path)
+
+            clusterIdx = int(name.split("-")[-1])
+            clusterSetPathName = getClusterSetPathName(path)
+            clusterSetIdx = int(clusterSetPathName.split("-")[-1])
+
+            # find xy coordinate of the cluster in plan-mds-coordinate.csv for optimal transport (do the same for other distance measures)
+            df = pd.read_csv(
+                f"{getClusterSetPathName(path)}/cluster-centers-summary.csv",
+            )
+            x = df.iloc[clusterIdx - 1, 1]
+            y = df.iloc[clusterIdx - 1, 2]
+            coordinate = (x, y)
+
+            # read plan-mds-coordinates-summary.csv into dataframe and retireve all pairwise distances between plans in the cluster
+            df = pd.read_csv(
+                f"{getClusterSetPathName(path)}/distance-matrix-summary.csv",
+            )
+
+            planDistances = []
+            print("planIdxs: ", planIdxs)
+            for i in range(len(df)):
+                if not i in planIdxs:
+                    continue
+                for j in range(i + 1, len(df)):
+                    if not j in planIdxs:
+                        continue
+                    if i == j:
+                        continue
+                    planDistances.append(df.iloc[i, j])
+
+            cluster = make_cluster(plans, name, coordinate, planDistances, path)
             clusters_collection = mydb["Clusters"]
             clusters_collection.insert_one(cluster)
             print("Cluster inserted: ", name)
 
-        elif name in ["AZ", "LA", "NV"]:
+        elif name in ["AZ", "LA", "NV"]:  # states
             ensembles = []
             ensembles_collection = mydb["Ensembles"]
             for file in file_list:
@@ -112,7 +162,17 @@ def make_summary(root, path):
         existing_plan = plans_collection.find_one({"_id": planId})
 
         if not existing_plan:
-            plan = make_plan(name, path)
+            planIdx = int(name.split("-")[-1]) - 1
+
+            # find xy coordinate of the plan in plan-mds-coordinate.csv for optimal transport (do the same for other distance measures)
+            df = pd.read_csv(
+                f"{getClusterSetPathName(path)}/plan-mds-coordinates-summary.csv",
+            )
+            x = df.iloc[planIdx, 1]
+            y = df.iloc[planIdx, 2]
+            coordinate = (x, y)
+
+            plan = make_plan(name, coordinate, path)
             plans_collection.insert_one(plan)
             print("Plan inserted: ", name)
 
