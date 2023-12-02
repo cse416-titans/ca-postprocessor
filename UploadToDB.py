@@ -3,7 +3,7 @@ import os
 
 import pymongo
 
-from MakeMongoSchema import *
+from MakeMongoDocument import *
 
 DB_SOURCE = "./"
 DB_ADDR = "mongodb://localhost:27017/"
