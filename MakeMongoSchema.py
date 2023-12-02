@@ -1,6 +1,9 @@
 import json
 
 import pymongo
+import os
+
+from pathUtil import getPathName
 
 DB_ADDR = "mongodb://localhost:27017/"
 DB_NAME = "Titans"
@@ -9,7 +12,13 @@ myClient = pymongo.MongoClient(DB_ADDR)
 mydb = myClient[DB_NAME]
 
 
-def make_plan(path, name, root):
+def make_plan(name, path):
+    planPathName = getPathName(path)
+    clusterPathName = planPathName[:-1]
+
+    planId = ":".join(planPathName)
+    clusterId = ":".join(clusterPathName)
+
     # TODO opportunity districts compute
     # Voting Splits remanipulation?
     with open(path, "r") as file:
@@ -26,9 +35,9 @@ def make_plan(path, name, root):
             else:
                 republic += 1
         plan = {
-            "_id": name,
+            "_id": planId,
             "name": name,
-            "clusterId": root,
+            "clusterId": clusterId,
             "democrat": democrat,
             "republic": republic,
             "numOfAAOpp": 0,
@@ -41,7 +50,13 @@ def make_plan(path, name, root):
         return plan
 
 
-def make_cluster(plans, name, root):
+def make_cluster(plans, name, path):
+    clusterPathName = getPathName(path)
+    clusterSetPathName = clusterPathName[:-1]
+
+    clusterId = ":".join(clusterPathName)
+    clusterSetId = ":".join(clusterSetPathName)
+
     # TODO distBtwPlans, avgClusterBoundary Copmutation
     refs = []
     total_dem = 0
@@ -52,43 +67,59 @@ def make_cluster(plans, name, root):
     total_white_opp = 0
 
     for plan in plans:
-        total_dem += plan["democrat"]
-        total_rep += plan["republic"]
+        """
+        total_dem += plan["Democratic"]
+        total_rep += plan["Republic"]
         total_aa_opp = plan["numOfAAOpp"]
         total_asian_opp = plan["numOfAsianOpp"]
         total_white_opp = plan["numOfWhiteOpp"]
         total_hispanic_opp = plan["numOfHispanicOpp"]
+        """
         ref = {"$ref": "DistrictPlans", "$id": plan["_id"]}
         refs.append(ref)
+
     cluster = {
-        "_id": name,
+        "_id": clusterId,  # root_
         "name": name,
-        "clusterSetId": root,
+        "clusterSetId": clusterSetId,
         "numOfPlans": len(plans),
         "avgClusterBoundary": None,
         # "distBtwPlans": None,
-        "avgDemocrat": total_dem / len(plans),
-        "avgRepublic": total_rep / len(plans),
-        "avgNumOfAAOpp": total_aa_opp / len(plans),
-        "avgNumOfWhiteOpp": total_white_opp / len(plans),
-        "avgNumOfAsianOpp": total_asian_opp / len(plans),
-        "avgNumOfHispanicOpp": total_hispanic_opp / len(plans),
+        "avgDemocrat": 0,
+        "avgRepublic": 0,
+        "avgNumOfAAOpp": 0,
+        "avgNumOfWhiteOpp": 0,
+        "avgNumOfAsianOpp": 0,
+        "avgNumOfHispanicOpp": 0,
         "plans": refs,
     }
     return cluster
 
 
-def make_clusterSet(clusters, name, root):
+def make_clusterSet(clusters, name, path):
     # TODO distanceMeasureId, clusterSeperationInde, and clusterQualituIndex Computation
+
+    clusterSetPathName = getPathName(path)
+    ensemblePathName = clusterSetPathName[:-1]
+
+    clusterSetId = ":".join(clusterSetPathName)
+    ensembleId = ":".join(ensemblePathName)
+
+    numOfPlans = 0
+
     refs = []
 
     for cluster in clusters:
         ref = {"$ref": "Clusters", "$id": cluster["_id"]}
         refs.append(ref)
+        numOfPlans += cluster["numOfPlans"]
+
     set = {
-        "_id": name,
+        "_id": clusterSetId,
         "name": name,
-        "ensembleId": root,
+        "numOfClusters": len(clusters),
+        "numOfPlans": numOfPlans,
+        "ensembleId": ensembleId,
         "distanceMeasureId": None,
         "clusterSeperationIndex": None,
         "clusterQualityIndex": None,
@@ -98,16 +129,22 @@ def make_clusterSet(clusters, name, root):
     return set
 
 
-def make_ensemble(size, sets, name, root):
+def make_ensemble(size, sets, name, path):
+    ensemblePathName = getPathName(path)
+    statePathName = ensemblePathName[:-1]
+
+    ensembleId = ":".join(ensemblePathName)
+    stateId = ":".join(statePathName)
+
     refs = []
 
     for set in sets:
         ref = {"$ref": "ClusterSets", "$id": set["_id"]}
         refs.append(ref)
     ensemble = {
-        "_id": name,
+        "_id": ensembleId,
         "name": name,
-        "stateId": root,
+        "stateId": stateId,
         "size": size,
         "clusterSets": refs,
     }
@@ -137,3 +174,7 @@ def make_state(ensembles, name):
         "ensembles": refs,
     }
     return state
+
+
+if __name__ == "__main__":
+    print("hello")
