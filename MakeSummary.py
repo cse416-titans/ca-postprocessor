@@ -5,8 +5,12 @@ import pymongo
 
 from MakeModels import *
 
-myClient = pymongo.MongoClient("mongodb://localhost:27017/")
-mydb = myClient["Titans"]
+DB_SOURCE = "./AZ"
+DB_ADDR = "mongodb://localhost:27017/"
+DB_NAME = "Titans"
+
+myClient = pymongo.MongoClient(DB_ADDR)
+mydb = myClient[DB_NAME]
 
 
 def make_summary(root, path):
@@ -18,7 +22,7 @@ def make_summary(root, path):
         for file in file_list:
             make_summary(name, os.path.join(path, file))
             list.append(file)
-            
+
         if "Ensemble" in name:
             sets = []
             sets_collection = mydb["ClusterSets"]
@@ -26,14 +30,14 @@ def make_summary(root, path):
             for file in file_list:
                 set = sets_collection.find_one({"_id": file})
                 sets.append(set)
-            
-            clusters = sets[0]["clusters"] #DBref{"$id": id, "$ref": Clusters}
+
+            clusters = sets[0]["clusters"]  # DBref{"$id": id, "$ref": Clusters}
             clusters_collection = mydb["Clusters"]
             cluster_ids = []
             for cluster_ref in clusters:
-                cluster = clusters_collection.find_one({"_id":cluster_ref.id})
+                cluster = clusters_collection.find_one({"_id": cluster_ref.id})
                 size += len(cluster["plans"])
-            
+
             ensemble = make_ensemble(size, sets, name, root)
             ensembles_collection = mydb["Ensembles"]
             ensembles_collection.insert_one(ensemble)
@@ -77,6 +81,9 @@ def make_summary(root, path):
         if not existing_plan:
             plan = make_plan(path, name, root)
             plans_collection.insert_one(plan)
-    
 
-make_summary(None, "C:\\Users/ufg11\\Desktop\\ca-server\\src\\main\\java\\com\\cse416\\titans\\reseources\\AZ")
+
+make_summary(
+    None,
+    DB_SOURCE,
+)
