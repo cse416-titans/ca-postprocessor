@@ -103,7 +103,7 @@ def make_plan(name, coordinate, path):
             "_id": planId,
             "name": name,
             "clusterId": clusterId,
-            "coordinates": coordinate,  # in MDS plot using i-th distance measure (in clusterSet i)
+            "coordinate": coordinate,  # in MDS plot using i-th distance measure (in clusterSet i)
             "totalPopulation": totalPopulation,  # total population across state
             "totalDemocraticVotes": sum(
                 democraticVotes
@@ -183,17 +183,32 @@ def make_cluster(plans, name, coordinate, planDistances, path):
     asianPercentages = []
     hispanicPercentages = []
     indianPercentages = []
+    numOfWhiteOpps = []
+    numOfAAOpps = []
+    numOfAsianOpps = []
+    numOfHispanicOpps = []
 
     for plan in plans:
         ref = {"$ref": "DistrictPlans", "$id": plan["_id"]}
         refs.append(ref)
-        democraticSplits.append(plan["democraticSplit"])
-        republicanSplits.append(plan["republicanSplit"])
+        democraticSplits.append(len(plan["democraticSplit"]))
+        republicanSplits.append(len(plan["republicanSplit"]))
         whitePercentages.append(plan["whitePercentages"])
         aAPercentages.append(plan["aAPercentages"])
         asianPercentages.append(plan["asianPercentages"])
         hispanicPercentages.append(plan["hispanicPercentages"])
         indianPercentages.append(plan["indianPercentages"])
+        numOfWhiteOpps.append(plan["numOfWhiteOpp"])
+        numOfAAOpps.append(plan["numOfAAOpp"])
+        numOfAsianOpps.append(plan["numOfAsianOpp"])
+        numOfHispanicOpps.append(plan["numOfHispanicOpp"])
+
+    avgDemocraticSplit = sum(democraticSplits) / len(democraticSplits)
+    avgRepublicanSplit = sum(republicanSplits) / len(republicanSplits)
+    avgNumOfWhiteOpps = sum(numOfWhiteOpps) / len(numOfWhiteOpps)
+    avgNumOfAAOpps = sum(numOfAAOpps) / len(numOfAAOpps)
+    avgNumOfAsianOpps = sum(numOfAsianOpps) / len(numOfAsianOpps)
+    avgNumOfHispanicOpps = sum(numOfHispanicOpps) / len(numOfHispanicOpps)
 
     cluster = {
         "_id": clusterId,
@@ -205,11 +220,23 @@ def make_cluster(plans, name, coordinate, planDistances, path):
         "avgPlanDistance": avgPlanDistance,  # average pairwise distance of plans in the cluster
         "avgClusterBoundary": None,  # average cluster boundary
         "avgPlan": avgPlanRef,  # average plan in the cluster
+        "democraticSplits": democraticSplits,  # democratic splits in each plan in the cluster
+        "republicanSplits": republicanSplits,  # republican splits in each plan in the cluster
+        "numOfWhiteOpps": numOfWhiteOpps,  # number of districts that have white population ratio > 0.5 in each plan in the cluster
+        "numOfAAOpps": numOfAAOpps,  # number of districts that have AA population ratio > 0.5 in each plan in the cluster
+        "numOfAsianOpps": numOfAsianOpps,  # number of districts that have asian population ratio > 0.5 in each plan in the cluster
+        "numOfHispanicOpps": numOfHispanicOpps,  # number of districts that have hispanic population ratio > 0.5 in each plan in the cluster
         "whitePercentages": whitePercentages,  # white population ratio in each district of each plan (2-D array)
         "aAPercentages": aAPercentages,  # AA population ratio in each district of each plan (2-D array)
         "asianPercentages": asianPercentages,  # asian population ratio in each district of each plan (2-D array)
         "hispanicPercentages": hispanicPercentages,  # hispanic population ratio in each district of each plan (2-D array)
         "indianPercentages": indianPercentages,  # indian population ratio in each district of each plan (2-D array)
+        "avgDemocraticSplit": avgDemocraticSplit,  # average democratic split across plans in the cluster
+        "avgRepublicanSplit": avgRepublicanSplit,  # average republican split across plans in the cluster
+        "avgNumOfWhiteOpps": avgNumOfWhiteOpps,  # average number of districts that have white population ratio > 0.5 across plans in the cluster
+        "avgNumOfAAOpps": avgNumOfAAOpps,  # average number of districts that have AA population ratio > 0.5 across plans in the cluster
+        "avgNumOfAsianOpps": avgNumOfAsianOpps,  # average number of districts that have asian population ratio > 0.5 across plans in the cluster
+        "avgNumOfHispanicOpps": avgNumOfHispanicOpps,  # average number of districts that have hispanic population ratio > 0.5 across plans in the cluster
         "plans": refs,
     }
 
