@@ -116,7 +116,7 @@ def make_summary(root, path):
             )
 
             planDistances = []
-            print("planIdxs: ", planIdxs)
+            # print("planIdxs: ", planIdxs)
             for i in range(len(df)):
                 if not i in planIdxs:
                     continue
