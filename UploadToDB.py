@@ -120,7 +120,7 @@ def make_summary(root, path):
             for i in range(len(df)):
                 if not i in planIdxs:
                     continue
-                for j in range(i + 1, len(df)):
+                for j in range(i + 2, len(df)):
                     if not j in planIdxs:
                         continue
                     if i == j:
