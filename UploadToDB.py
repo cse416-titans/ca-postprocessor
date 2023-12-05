@@ -1,12 +1,9 @@
 import json
 import os
-
 import pymongo
 import pandas as pd
 import math
-
 from MakeMongoDocument import *
-
 from pathUtil import getPathName, getClusterSetPathName
 
 DB_SOURCE = "./"
@@ -25,7 +22,6 @@ NOT_TO_ADD = [
     "summary",
     "units",
 ]
-
 
 def make_summary(root, path):
     name = os.path.splitext(os.path.basename(path))[0]
@@ -175,7 +171,6 @@ def make_summary(root, path):
             plan = make_plan(name, coordinate, path)
             plans_collection.insert_one(plan)
             print("Plan inserted: ", name)
-
 
 make_summary(
     None,

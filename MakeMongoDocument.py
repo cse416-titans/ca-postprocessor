@@ -1,26 +1,20 @@
 import json
-
 import pymongo
 import os
-
 import random
 import pandas as pd
-
 from pathUtil import getPathName
 
 DB_ADDR = "mongodb://localhost:27017/"
 DB_NAME = "Titans"
+OPP_THRESHOLD = 0.5
 
 myClient = pymongo.MongoClient(DB_ADDR)
 mydb = myClient[DB_NAME]
 
-OPP_THRESHOLD = 0.5
-
-
 def make_plan(name, coordinate, path):
     planPathName = getPathName(path)
     clusterPathName = planPathName[:-1]
-
     planId = ":".join(planPathName)
     clusterId = ":".join(clusterPathName)
 
@@ -242,7 +236,6 @@ def make_cluster(plans, name, coordinate, planDistances, path):
 
     return cluster
 
-
 def make_clusterSet(clusters, name, clusterDistances, path):
     # TODO distanceMeasureId, clusterSeperationInde, and clusterQualituIndex Computation
 
@@ -293,7 +286,6 @@ def make_clusterSet(clusters, name, clusterDistances, path):
 
     return clusterSet
 
-
 def make_ensemble(clusterSets, name, path):
     ensemblePathName = getPathName(path)
     statePathName = ensemblePathName[:-1]
@@ -318,7 +310,6 @@ def make_ensemble(clusterSets, name, path):
     }
 
     return ensemble
-
 
 def make_state(ensembles, name):
     refs = []
@@ -345,7 +336,6 @@ def make_state(ensembles, name):
     }
 
     return state
-
 
 if __name__ == "__main__":
     print("hello")
