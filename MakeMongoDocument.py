@@ -12,6 +12,7 @@ OPP_THRESHOLD = 0.5
 myClient = pymongo.MongoClient(DB_ADDR)
 mydb = myClient[DB_NAME]
 
+
 def make_plan(name, coordinate, path):
     planPathName = getPathName(path)
     clusterPathName = planPathName[:-1]
@@ -28,6 +29,8 @@ def make_plan(name, coordinate, path):
     with open(path, "r") as file:
         json_data = json.load(file)
         features = json_data["features"]
+
+        totalPopulation = 0
 
         republicanVotes = []
         democraticVotes = []
@@ -56,12 +59,16 @@ def make_plan(name, coordinate, path):
             democraticVotes.append(dem)
             republicanVotes.append(rep)
 
-            totalPopulation = properties["Total_Population"]
-            whitePopulationRatio = properties["White"] / totalPopulation
-            aaPopulationRatio = properties["Black"] / totalPopulation
-            asianPopulationRatio = properties["Asian"] / totalPopulation
-            hispanicPopulationRatio = properties["Hispanic"] / totalPopulation
-            indianPopulationRatio = properties["American_Indian"] / totalPopulation
+            districtTotalPopulation = properties["Total_Population"]
+            whitePopulationRatio = properties["White"] / districtTotalPopulation
+            aaPopulationRatio = properties["Black"] / districtTotalPopulation
+            asianPopulationRatio = properties["Asian"] / districtTotalPopulation
+            hispanicPopulationRatio = properties["Hispanic"] / districtTotalPopulation
+            indianPopulationRatio = (
+                properties["American_Indian"] / districtTotalPopulation
+            )
+
+            totalPopulation += districtTotalPopulation
 
             whitePercentages.append(whitePopulationRatio)
             aAPercentages.append(aaPopulationRatio)
@@ -236,6 +243,7 @@ def make_cluster(plans, name, coordinate, planDistances, path):
 
     return cluster
 
+
 def make_clusterSet(clusters, name, clusterDistances, path):
     # TODO distanceMeasureId, clusterSeperationInde, and clusterQualituIndex Computation
 
@@ -286,6 +294,7 @@ def make_clusterSet(clusters, name, clusterDistances, path):
 
     return clusterSet
 
+
 def make_ensemble(clusterSets, name, path):
     ensemblePathName = getPathName(path)
     statePathName = ensemblePathName[:-1]
@@ -310,6 +319,7 @@ def make_ensemble(clusterSets, name, path):
     }
 
     return ensemble
+
 
 def make_state(ensembles, name):
     refs = []
@@ -336,6 +346,7 @@ def make_state(ensembles, name):
     }
 
     return state
+
 
 if __name__ == "__main__":
     print("hello")
