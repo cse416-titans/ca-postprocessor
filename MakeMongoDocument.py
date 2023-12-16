@@ -155,16 +155,10 @@ def make_cluster(plans, name, coordinate, planDistances, path):
 
     refs = []
 
-    # sort plans by ethic group ratio, and then voting ratio
+    # sort plans by xy coordinate
     plans = sorted(
         plans,
-        key=lambda x: (
-            x["numOfWhiteOpp"],
-            x["numOfAAOpp"],
-            x["numOfAsianOpp"],
-            x["numOfHispanicOpp"],
-            x["democraticSplit"],
-        ),
+        key=lambda x: (x["coordinate"][0], x["coordinate"][1]),
     )
 
     # filter only ones that available flag is true
