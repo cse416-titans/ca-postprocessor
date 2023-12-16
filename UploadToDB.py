@@ -4,9 +4,9 @@ import pymongo
 import pandas as pd
 import math
 from MakeMongoDocument import *
-from pathUtil import getPathName, getClusterSetPathName
+from pathUtil import getPathName, getClusterSetPathName, getPlanPathName
 
-DB_SOURCE = "./"
+DB_SOURCE = "./AZ"
 DB_ADDR = "mongodb://localhost:27017/"
 DB_NAME = "Titans"
 
@@ -89,7 +89,7 @@ def make_summary(root, path):
             plans = []
             plans_collection = mydb["DistrictPlans"]
             for file in file_list:
-                planId = ":".join(getPathName(path + "/" + file))
+                planId = ":".join(getPlanPathName(path + "/" + file))
                 planIdxs.append(int(planId.split(":")[-1].split("-")[-1]) - 1)
                 plan = plans_collection.find_one({"_id": planId})
                 plans.append(plan)
@@ -154,7 +154,7 @@ def make_summary(root, path):
             return
 
         plans_collection = mydb["DistrictPlans"]
-        planId = ":".join(getPathName(path))
+        planId = ":".join(getPlanPathName(path))
         existing_plan = plans_collection.find_one({"_id": planId})
 
         if not existing_plan:

@@ -3,7 +3,7 @@ import pymongo
 import os
 import random
 import pandas as pd
-from pathUtil import getPathName
+from pathUtil import getPathName, getPlanPathName
 
 DB_ADDR = "mongodb://localhost:27017/"
 DB_NAME = "Titans"
@@ -14,7 +14,7 @@ mydb = myClient[DB_NAME]
 
 
 def make_plan(name, coordinate, path):
-    planPathName = getPathName(path)
+    planPathName = getPlanPathName(path)
     clusterPathName = planPathName[:-1]
     planId = ":".join(planPathName)
     clusterId = ":".join(clusterPathName)
