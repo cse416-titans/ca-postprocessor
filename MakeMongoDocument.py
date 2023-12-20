@@ -41,6 +41,8 @@ def make_plan(name, coordinate, path):
         whiteOpps = []
         asianOpps = []
         hispanicOpps = []
+        majMinDistricts = []
+        competitiveDistricts = []
 
         whitePercentages = []
         aAPercentages = []
@@ -82,17 +84,34 @@ def make_plan(name, coordinate, path):
                 republicanSplit.append(districtIdx)
             if whitePopulationRatio > OPP_THRESHOLD:
                 whiteOpps.append(districtIdx)
+            if whitePopulationRatio < OPP_THRESHOLD:
+                majMinDistricts.append(districtIdx)
             if aaPopulationRatio > OPP_THRESHOLD:
                 aAOpps.append(districtIdx)
             if asianPopulationRatio > OPP_THRESHOLD:
                 asianOpps.append(districtIdx)
             if hispanicPopulationRatio > OPP_THRESHOLD:
                 hispanicOpps.append(districtIdx)
+            if (
+                abs(
+                    whitePopulationRatio
+                    - (
+                        aaPopulationRatio
+                        + hispanicPopulationRatio
+                        + asianPopulationRatio
+                        + indianPopulationRatio
+                    )
+                )
+                < 0.1
+            ):
+                competitiveDistricts.append(districtIdx)
 
         numOfAAOpp = len(aAOpps)
         numOfWhiteOpp = len(whiteOpps)
         numOfAsianOpp = len(asianOpps)
         numOfHispanicOpp = len(hispanicOpps)
+        numOfMajMinDistricts = len(majMinDistricts)
+        numOfCompetitiveDistricts = len(competitiveDistricts)
 
         avgWhitePercentage = sum(whitePercentages) / len(whitePercentages)
         avgAAPercentage = sum(aAPercentages) / len(aAPercentages)
@@ -120,6 +139,10 @@ def make_plan(name, coordinate, path):
             "numOfWhiteOpp": numOfWhiteOpp,  # number of districts that have white population ratio > 0.5
             "numOfAsianOpp": numOfAsianOpp,  # number of districts that have asian population ratio > 0.5
             "numOfHispanicOpp": numOfHispanicOpp,  # number of districts that have hispanic population ratio > 0.5
+            "numOfMajMinDistricts": numOfMajMinDistricts,  # number of districts that have white population ratio < 0.5
+            "numOfCompetitiveDistricts": numOfCompetitiveDistricts,  # number of districts that have white population ratio ~ 0.5
+            "majMinDistricts": majMinDistricts,  # districts that have white population ratio < 0.5
+            "competitiveDistricts": competitiveDistricts,  # districts that have white population ratio ~ 0.5
             "aAOpps": aAOpps,  # districts that have AA population ratio > 0.5
             "whiteOpps": whiteOpps,  # districts that have white population ratio > 0.5
             "asianOpps": asianOpps,  # districts that have asian population ratio > 0.5
@@ -182,6 +205,8 @@ def make_cluster(plans, name, coordinate, planDistances, path):
     numOfAAOpps = []
     numOfAsianOpps = []
     numOfHispanicOpps = []
+    numOfMajMinDistricts = []
+    numOfCompetitiveDistricts = []
 
     for plan in plans:
         ref = {"$ref": "DistrictPlans", "$id": plan["_id"]}
@@ -197,6 +222,8 @@ def make_cluster(plans, name, coordinate, planDistances, path):
         numOfAAOpps.append(plan["numOfAAOpp"])
         numOfAsianOpps.append(plan["numOfAsianOpp"])
         numOfHispanicOpps.append(plan["numOfHispanicOpp"])
+        numOfMajMinDistricts.append(plan["numOfMajMinDistricts"])
+        numOfCompetitiveDistricts.append(plan["numOfCompetitiveDistricts"])
 
     avgDemocraticSplit = sum(democraticSplits) / len(democraticSplits)
     avgRepublicanSplit = sum(republicanSplits) / len(republicanSplits)
@@ -204,6 +231,10 @@ def make_cluster(plans, name, coordinate, planDistances, path):
     avgNumOfAAOpps = sum(numOfAAOpps) / len(numOfAAOpps)
     avgNumOfAsianOpps = sum(numOfAsianOpps) / len(numOfAsianOpps)
     avgNumOfHispanicOpps = sum(numOfHispanicOpps) / len(numOfHispanicOpps)
+    avgNumOfMajMinDistricts = sum(numOfMajMinDistricts) / len(numOfMajMinDistricts)
+    avgNumOfCompetitiveDistricts = sum(numOfCompetitiveDistricts) / len(
+        numOfCompetitiveDistricts
+    )
 
     cluster = {
         "_id": clusterId,
@@ -215,6 +246,7 @@ def make_cluster(plans, name, coordinate, planDistances, path):
         "avgPlanDistance": avgPlanDistance,  # average pairwise distance of plans in the cluster
         "avgClusterBoundary": None,  # average cluster boundary
         "avgPlan": avgPlanRef,  # average plan in the cluster
+        "avgPlanId": avgPlan["_id"],  # average plan id in the cluster
         "democraticSplits": democraticSplits,  # democratic splits in each plan in the cluster
         "republicanSplits": republicanSplits,  # republican splits in each plan in the cluster
         "numOfWhiteOpps": numOfWhiteOpps,  # number of districts that have white population ratio > 0.5 in each plan in the cluster
@@ -232,6 +264,8 @@ def make_cluster(plans, name, coordinate, planDistances, path):
         "avgNumOfAAOpps": avgNumOfAAOpps,  # average number of districts that have AA population ratio > 0.5 across plans in the cluster
         "avgNumOfAsianOpps": avgNumOfAsianOpps,  # average number of districts that have asian population ratio > 0.5 across plans in the cluster
         "avgNumOfHispanicOpps": avgNumOfHispanicOpps,  # average number of districts that have hispanic population ratio > 0.5 across plans in the cluster
+        "avgNumOfMajMinDistricts": avgNumOfMajMinDistricts,  # average number of districts that have white population ratio < 0.5 across plans in the cluster
+        "avgNumOfCompetitiveDistricts": avgNumOfCompetitiveDistricts,  # average number of districts that have white population ratio ~ 0.5 across plans in the cluster
         "plans": refs,
     }
 
