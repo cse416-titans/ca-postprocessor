@@ -6,7 +6,7 @@ import math
 from MakeMongoDocument import *
 from pathUtil import getPathName, getClusterSetPathName, getPlanPathName
 
-DB_SOURCE = "./AZ"
+DB_SOURCE = "./"
 DB_ADDR = "mongodb://localhost:27017/"
 DB_NAME = "Titans"
 
@@ -22,6 +22,157 @@ NOT_TO_ADD = [
     "summary",
     "units",
 ]
+
+
+plans_collection = mydb["DistrictPlans"]
+
+for planPath in ["az_curr.json", "la_curr.json", "nv_curr.json"]:
+    print("planPath: ", planPath)
+
+    availability = True
+
+    # open plan geojson file in path as pandas dataframe
+    with open(planPath, "r") as file:
+        json_data = json.load(file)
+        features = json_data["features"]
+
+        totalPopulation = 0
+
+        republicanVotes = []
+        democraticVotes = []
+        republicanSplit = []
+        democraticSplit = []
+
+        aAOpps = []
+        whiteOpps = []
+        asianOpps = []
+        hispanicOpps = []
+        majMinDistricts = []
+        competitiveDistricts = []
+
+        whitePercentages = []
+        aAPercentages = []
+        asianPercentages = []
+        hispanicPercentages = []
+        indianPercentages = []
+
+        districtIdx = 0
+        for feature in features:
+            districtIdx += 1
+            properties = feature["properties"]
+
+            dem = properties["Democratic"]
+            rep = properties["Republic"]
+
+            democraticVotes.append(dem)
+            republicanVotes.append(rep)
+
+            districtTotalPopulation = properties["Total_Population"]
+            whitePopulationRatio = properties["White"] / districtTotalPopulation
+            aaPopulationRatio = properties["Black"] / districtTotalPopulation
+            asianPopulationRatio = properties["Asian"] / districtTotalPopulation
+            hispanicPopulationRatio = properties["Hispanic"] / districtTotalPopulation
+            indianPopulationRatio = (
+                properties["American_Indian"] / districtTotalPopulation
+            )
+
+            totalPopulation += districtTotalPopulation
+
+            whitePercentages.append(whitePopulationRatio)
+            aAPercentages.append(aaPopulationRatio)
+            asianPercentages.append(asianPopulationRatio)
+            hispanicPercentages.append(hispanicPopulationRatio)
+            indianPercentages.append(indianPopulationRatio)
+
+            if dem > rep:
+                democraticSplit.append(districtIdx)
+            else:
+                republicanSplit.append(districtIdx)
+            if whitePopulationRatio > OPP_THRESHOLD:
+                whiteOpps.append(districtIdx)
+            if whitePopulationRatio < OPP_THRESHOLD:
+                majMinDistricts.append(districtIdx)
+            if aaPopulationRatio > OPP_THRESHOLD:
+                aAOpps.append(districtIdx)
+            if asianPopulationRatio > OPP_THRESHOLD:
+                asianOpps.append(districtIdx)
+            if hispanicPopulationRatio > OPP_THRESHOLD:
+                hispanicOpps.append(districtIdx)
+            if (
+                abs(
+                    whitePopulationRatio
+                    - (
+                        aaPopulationRatio
+                        + hispanicPopulationRatio
+                        + asianPopulationRatio
+                        + indianPopulationRatio
+                    )
+                )
+                < 0.1
+            ):
+                competitiveDistricts.append(districtIdx)
+
+        numOfAAOpp = len(aAOpps)
+        numOfWhiteOpp = len(whiteOpps)
+        numOfAsianOpp = len(asianOpps)
+        numOfHispanicOpp = len(hispanicOpps)
+        numOfMajMinDistricts = len(majMinDistricts)
+        numOfCompetitiveDistricts = len(competitiveDistricts)
+
+        avgWhitePercentage = sum(whitePercentages) / len(whitePercentages)
+        avgAAPercentage = sum(aAPercentages) / len(aAPercentages)
+        avgAsianPercentage = sum(asianPercentages) / len(asianPercentages)
+        avgHispanicPercentage = sum(hispanicPercentages) / len(hispanicPercentages)
+        avgIndianPercentage = sum(indianPercentages) / len(indianPercentages)
+
+        planId = planPath
+        name = planPath
+
+        print(numOfCompetitiveDistricts)
+        print(numOfMajMinDistricts)
+
+        plan = {
+            "_id": planId,
+            "name": name,
+            "totalPopulation": totalPopulation,  # total population across state
+            "totalDemocraticVotes": sum(
+                democraticVotes
+            ),  # total democratic votes across state
+            "totalRepublicanVotes": sum(
+                republicanVotes
+            ),  # total republican votes across state
+            "democraticVotes": democraticVotes,  # democratic votes in each district
+            "republicanVotes": republicanVotes,  # republican votes in each district
+            "democraticSplit": democraticSplit,  # districts that voted for democratic party
+            "republicanSplit": republicanSplit,  # districts that voted for republican party
+            "numOfAAOpp": numOfAAOpp,  # number of districts that have AA population ratio > 0.5
+            "numOfWhiteOpp": numOfWhiteOpp,  # number of districts that have white population ratio > 0.5
+            "numOfAsianOpp": numOfAsianOpp,  # number of districts that have asian population ratio > 0.5
+            "numOfHispanicOpp": numOfHispanicOpp,  # number of districts that have hispanic population ratio > 0.5
+            "aAOpps": aAOpps,  # districts that have AA population ratio > 0.5
+            "whiteOpps": whiteOpps,  # districts that have white population ratio > 0.5
+            "asianOpps": asianOpps,  # districts that have asian population ratio > 0.5
+            "hispanicOpps": hispanicOpps,  # districts that have hispanic population ratio > 0.5
+            "whitePercentages": whitePercentages,  # white population ratio in each district
+            "aAPercentages": aAPercentages,  # AA population ratio in each district
+            "asianPercentages": asianPercentages,  # asian population ratio in each district
+            "hispanicPercentages": hispanicPercentages,  # hispanic population ratio in each district
+            "indianPercentages": indianPercentages,  # indian population ratio in each district
+            "avgWhitePercentage": avgWhitePercentage,  # average white population ratio across districts
+            "avgAAPercentage": avgAAPercentage,  # average AA population ratio across districts
+            "avgAsianPercentage": avgAsianPercentage,  # average asian population ratio across districts
+            "avgHispanicPercentage": avgHispanicPercentage,  # average hispanic population ratio across districts
+            "avgIndianPercentage": avgIndianPercentage,  # average indian population ratio across districts
+            "availability": availability,  # if plan is available for download
+            "numOfMajMinDistricts": numOfMajMinDistricts,  # number of districts that have white population ratio < 0.5
+            "numOfCompetitiveDistricts": numOfCompetitiveDistricts,  # number of districts that have white population ratio < 0.5
+            "majMinDistricts": majMinDistricts,  # districts that have white population ratio < 0.5
+            "competitiveDistricts": competitiveDistricts,  # districts that have white population ratio < 0.5
+            "geoJson": json_data if availability == True else None,  # geojson file
+        }
+
+        plans_collection.insert_one(plan)
+
 
 def make_summary(root, path):
     name = os.path.splitext(os.path.basename(path))[0]
@@ -49,7 +200,10 @@ def make_summary(root, path):
 
             ensemble = make_ensemble(clusterSets, name, path)
             ensembles_collection = mydb["Ensembles"]
-            ensembles_collection.insert_one(ensemble)
+            try:
+                ensembles_collection.insert_one(ensemble)
+            except Exception as e:
+                print(e)
             print("Ensemble inserted: ", name)
 
         elif "clusterSet" in name:
@@ -67,21 +221,37 @@ def make_summary(root, path):
             df = pd.read_csv(
                 f"{getClusterSetPathName(path)}/cluster-centers-summary.csv",
             )
+            df_plan = pd.read_csv(
+                f"{getClusterSetPathName(path)}/distance-matrix-summary.csv",
+            )
+
             clusterDistances = []
-            for i in range(len(df)):
-                for j in range(i + 1, len(df)):
-                    if i == j:
+            for i in range(len(clusters)):
+                avgPlanIdx1 = int(
+                    clusters_collection.find_one({"_id": clusters[i]["_id"]})[
+                        "avgPlanId"
+                    ].split("-")[-1]
+                )
+                for j in range(i + 1, len(clusters)):
+                    if i >= j:
                         continue
-                    xa = df.iloc[i, 1]
-                    xb = df.iloc[j, 1]
-                    ya = df.iloc[i, 2]
-                    yb = df.iloc[j, 2]
-                    dist = math.sqrt((xa - xb) ** 2 + (ya - yb) ** 2)
+                    avgPlanIdx2 = int(
+                        clusters_collection.find_one({"_id": clusters[j]["_id"]})[
+                            "avgPlanId"
+                        ].split("-")[-1]
+                    )
+                    # print("avgPlanIdx1: ", avgPlanIdx1)
+                    # print("avgPlanIdx2: ", avgPlanIdx2)
+                    dist = float(df_plan.iloc[avgPlanIdx1 - 1, avgPlanIdx2 - 1])
+                    # print(type(dist))
                     clusterDistances.append(dist)
 
             set = make_clusterSet(clusters, name, clusterDistances, path)
             sets_collection = mydb["ClusterSets"]
-            sets_collection.insert_one(set)
+            try:
+                sets_collection.insert_one(set)
+            except Exception as e:
+                print(e)
             print("ClusterSet inserted: ", name)
 
         elif "cluster" in name:
@@ -125,10 +295,13 @@ def make_summary(root, path):
 
             cluster = make_cluster(plans, name, coordinate, planDistances, path)
             clusters_collection = mydb["Clusters"]
-            clusters_collection.insert_one(cluster)
+            try:
+                clusters_collection.insert_one(cluster)
+            except Exception as e:
+                print(e)
             print("Cluster inserted: ", name)
 
-        elif name in ["AZ", "LA", "NV"]:  # states
+        elif name in ["LA", "NV"]:  # states
             ensembles = []
             ensembles_collection = mydb["Ensembles"]
             for file in file_list:
@@ -138,7 +311,10 @@ def make_summary(root, path):
                 ensembles.append(ensemble)
             state = make_state(ensembles, name)
             states_collection = mydb["States"]
-            states_collection.insert_one(state)
+            try:
+                states_collection.insert_one(state)
+            except Exception as e:
+                print(e)
             print("State inserted: ", name)
         else:
             return
@@ -169,10 +345,16 @@ def make_summary(root, path):
             coordinate = (x, y)
 
             plan = make_plan(name, coordinate, path)
-            plans_collection.insert_one(plan)
+            try:
+                plans_collection.insert_one(plan)
+            except Exception as e:
+                print(e)
             print("Plan inserted: ", name)
 
+
+"""
 make_summary(
     None,
     DB_SOURCE,
 )
+"""
